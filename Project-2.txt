@@ -1,0 +1,187 @@
+from google.colab import drive
+import cv2
+import numpy as np
+from google.colab.patches import cv2_imshow
+
+from google.colab import drive
+import cv2
+
+# Mount Google Drive
+drive.mount('/content/drive')
+
+# Specify the path to the video in your Google Drive
+video_path ="https://drive.google.com/uc?id=1Y8kewbqUUMFY3jTL8t1Eur4nMEJ5nho1"
+
+# Create a VideoCapture object to read the video file
+cap = cv2.VideoCapture(video_path)
+
+# Get video frame width and height
+frame_width = int(cap.get(3))
+frame_height = int(cap.get(4))
+
+# Initialize the background subtractor
+bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+
+# Define the codec and create a VideoWriter object to save the output video
+fourcc = cv2.VideoWriter_fourcc(*'XVID')  # You can choose a different codec if needed
+out = cv2.VideoWriter('/content/drive/My Drive/output_video.avi', fourcc, 30, (frame_width, frame_height))
+
+while True:
+    # Read a frame from the video
+    ret, frame = cap.read()
+    if not ret:
+        break  # Break the loop if no frame is read
+
+    # Apply background subtraction to detect moving objects
+    fg_mask = bg_subtractor.apply(frame)
+
+    # Apply morphological operations to clean up the mask
+    fg_mask = cv2.erode(fg_mask, None, iterations=2)
+    fg_mask = cv2.dilate(fg_mask, None, iterations=2)
+
+    # Find contours of moving objects in the mask
+    contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        if cv2.contourArea(contour) > 100:  # Adjust the area threshold as needed
+            # Draw a bounding box around the moving object
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    # Write the frame to the output video
+    out.write(frame)
+
+    # Display the frame with bounding boxes
+    cv2_imshow(frame)
+
+    if cv2.waitKey(30) & 0xFF == 27:  # Press 'Esc' to exit the loop
+        break
+
+# Release the video capture and the output video writer
+cap.release()
+out.release()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+# Specify the path to the video in your Google Drive
+video_path ="https://drive.google.com/uc?id=1on_WVZvF3ycR_EyMu-MoeA9YdrK6nJJ-"
+cap = cv2.VideoCapture(video_path)  # Replace 'input_video.mp4' with your video file
+
+# Initialize the background subtractor
+bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+
+# Lists to store amplitude of motion over time
+time_frames = []
+motion_amplitudes = []
+
+frame_number = 0  # Initialize frame number
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Apply background subtraction to detect moving objects
+    fg_mask = bg_subtractor.apply(frame)
+
+    # Calculate the amplitude of motion
+    motion_amplitude = np.sum(fg_mask)  # You can use different measures as needed
+
+    # Append frame number and motion amplitude to lists
+    frame_number += 1
+    time_frames.append(frame_number)
+    motion_amplitudes.append(motion_amplitude)
+
+    if cv2.waitKey(30) & 0xFF == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+# Create a plot to visualize amplitude of motion over time
+plt.figure(figsize=(10, 5))
+plt.plot(time_frames, motion_amplitudes, label='Motion Amplitude')
+plt.xlabel('Frame Number')
+plt.ylabel('Amplitude of Motion')
+plt.title('Motion Amplitude Over Time')
+plt.legend()
+plt.grid()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Read the input video
+# Specify the path to the video in your Google Drive
+video_path ="https://drive.google.com/uc?id=1Y8kewbqUUMFY3jTL8t1Eur4nMEJ5nho1"
+cap = cv2.VideoCapture(video_path)  # Replace 'input_video.mp4' with your video file
+
+# Initialize the background subtractor
+bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+
+# Lists to store amplitude of motion over time
+time_frames = []
+motion_amplitudes = []
+
+frame_number = 0  # Initialize frame number
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Apply background subtraction to detect moving objects
+    fg_mask = bg_subtractor.apply(frame)
+
+    # Calculate the amplitude of motion
+    motion_amplitude = np.sum(fg_mask)  # You can use different measures as needed
+
+    # Append frame number and motion amplitude to lists
+    frame_number += 1
+    time_frames.append(frame_number)
+    motion_amplitudes.append(motion_amplitude)
+
+    if cv2.waitKey(30) & 0xFF == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+# Create a plot to visualize amplitude of motion over time
+plt.figure(figsize=(10, 5))
+plt.plot(time_frames, motion_amplitudes, label='Motion Amplitude')
+plt.xlabel('Frame Number')
+plt.ylabel('Amplitude of Motion')
+plt.title('Motion Amplitude Over Time')
+plt.legend()
+plt.grid()
+plt.show()
