@@ -1,0 +1,70 @@
+import numpy as np
+import cv2
+
+# Function to visualize optical flow using color coding
+def draw_optical_flow(flow):
+    h, w = flow.shape[:2]
+    hsv = np.zeros((h, w, 3), dtype=np.uint8)
+
+    # Use the angles of the optical flow to determine color
+    angle = np.arctan2(flow[:, :, 1], flow[:, :, 0])
+    magnitude = cv2.cartToPolar(flow[:, :, 0], flow[:, :, 1])[0]
+
+    # Map angle to the hue component of the HSV color space
+    hsv[:, :, 0] = (angle * 180 / np.pi / 2).astype(np.uint8)
+
+    # Normalize the magnitude for better visualization
+    hsv[:, :, 1] = 255
+    hsv[:, :, 2] = cv2.normalize(magnitude, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+    # Convert HSV to BGR for displaying
+    return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+# Input video file path
+input_video_path = 'Video Mag.mp4'
+
+cap = cv2.VideoCapture(input_video_path)
+
+# Check if the video file is opened successfully
+if not cap.isOpened():
+    print("Error: Could not open video.")
+    exit()
+
+# Get the video's frame width, height, and frames per second (fps)
+frame_width = int(cap.get(3))
+frame_height = int(cap.get(4))
+fps = int(cap.get(5))
+
+# Define the codec and create a VideoWriter object to save the output video
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+output_video_path = 'konkon.mp4'  # Output video path
+out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+
+suc, prev = cap.read()
+prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
+
+while True:
+    suc, img = cap.read()
+
+    if not suc:
+        print("End of video.")
+        break
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    flow = cv2.calcOpticalFlowFarneback(prevgray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+    prevgray = gray
+
+    flow_visualization = draw_optical_flow(flow)
+    out.write(flow_visualization)  # Write the frame to the output video
+
+cap.release()
+out.release()  # Release the output video
+
+
+
+
+
+
+
+
+
