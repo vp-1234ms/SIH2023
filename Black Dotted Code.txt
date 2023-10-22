@@ -1,0 +1,61 @@
+import cv2
+import numpy as np
+
+# Function to detect motion and draw black dots around objects with small motion
+def detect_and_draw_motion(input_video_path, output_video_path, motion_threshold=30, dot_radius=5):
+    cap = cv2.VideoCapture(input_video_path)
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        return
+
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+    out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), 30, (frame_width, frame_height), isColor=True)
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Convert the frame to grayscale for motion detection
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        if 'prev_frame' not in locals():
+            prev_frame = gray_frame
+            continue
+
+        # Calculate the absolute difference between frames
+        frame_diff = cv2.absdiff(prev_frame, gray_frame)
+
+        # Apply a binary threshold to identify regions with motion
+        _, thresholded_frame = cv2.threshold(frame_diff, motion_threshold, 255, cv2.THRESH_BINARY)
+
+        # Find contours of the motion regions
+        contours, _ = cv2.findContours(thresholded_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Create an all-white frame
+        white_frame = np.ones_like(frame) * 255
+
+        # Draw black dots around objects with small motion
+        for contour in contours:
+            if cv2.contourArea(contour) >= 100:  # You can adjust the minimum area for motion detection
+                continue
+            M = cv2.moments(contour)
+            if M["m00"] != 0:  # Ensure that the denominator is not zero
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                cv2.circle(white_frame, (cX, cY), dot_radius, (0, 0, 0), -1)
+
+        out.write(white_frame)
+        prev_frame = gray_frame
+
+    cap.release()
+    out.release()
+
+# Example usage
+input_video_path = 'Video Mag.mp4'
+output_video_path = 'bahu-1.mp4'
+motion_threshold = 30  # Adjust the motion threshold as needed
+dot_radius = 5  # Adjust the radius of black dots as needed
+
+detect_and_draw_motion(input_video_path, output_video_path, motion_threshold, dot_radius)
