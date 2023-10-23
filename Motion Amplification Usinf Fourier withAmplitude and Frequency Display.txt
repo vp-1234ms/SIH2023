@@ -1,0 +1,93 @@
+import cv2
+import numpy as np
+
+# Function to apply motion magnification
+def motion_magnify(video_path, output_path, cutoff_freq, amplification_factor):
+    # Open the video file
+    cap = cv2.VideoCapture(video_path)
+
+    # Get video properties
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+    frame_count = int(cap.get(7))
+    fps = int(cap.get(5))
+
+    # Create VideoWriter object to save the output
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height), isColor=True)
+
+    # Parameters for temporal filtering
+    alpha = 100
+
+    # Initialize frequency and amplitude
+    frequency = 0
+    amplitude = 0
+
+    # Process each frame
+    prev_frame = None
+    for i in range(frame_count):
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if prev_frame is None:
+            prev_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            continue
+
+        # Convert frames to grayscale
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Compute the temporal difference
+        diff = frame - prev_frame
+
+        # Apply Fourier transform
+        fft_diff = np.fft.fft2(diff)
+        fft_shifted = np.fft.fftshift(fft_diff)
+
+        # Set low-frequency components to zero
+        h, w = frame.shape
+        y, x = np.ogrid[-h // 2:h // 2, -w // 2:w // 2]
+        mask = (x**2 + y**2 <= (cutoff_freq**2))
+        fft_shifted = fft_shifted * mask
+
+        # Apply inverse Fourier transform
+        inv_fft = np.fft.ifftshift(fft_shifted)
+        amplified = np.fft.ifft2(inv_fft).real
+
+        # Temporal filtering to enhance motion
+        amplified = alpha * amplified
+
+        # Update frequency and amplitude based on motion characteristics
+        frequency = np.mean(np.abs(amplified))
+        amplitude = np.max(np.abs(amplified))
+
+        # Ensure that both frames are of the same data type
+        frame = frame.astype(np.float32)
+        amplified = amplified.astype(np.float32)
+
+        # Blend amplified frame with original frame
+        result_frame = cv2.addWeighted(frame, 1, amplified, amplification_factor, 0)
+
+        # Convert result frame back to 3 channels (color)
+        result_frame = cv2.cvtColor(result_frame.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+
+        # Overlay changing frequency and amplitude in the top-left corner of the frame
+        info_text = f"Frequency: {frequency:.2f}, Amplitude: {amplitude:.2f}"
+        cv2.putText(result_frame, info_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        # Write the frame to the output video
+        out.write(result_frame)
+
+        prev_frame = frame
+
+    # Release the video objects
+    cap.release()
+    out.release()
+
+if __name__ == "__main__":
+    input_video_path = 'Video Mag.mp4'
+    output_video_path = 'ant.avi'
+    cutoff_frequency = 1000
+    amplification_factor = 5.0
+
+    motion_magnify(input_video_path, output_video_path, cutoff_frequency, amplification_factor)
