@@ -1,0 +1,44 @@
+import cv2
+import numpy as np
+
+# Function to amplify motion in a video
+def amplify_motion(input_video_path, output_video_path, motion_scale=10):
+    cap = cv2.VideoCapture(input_video_path)
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        return
+
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+    out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), 30, (frame_width, frame_height), isColor=True)
+
+    prev_frame = None
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if prev_frame is not None:
+            # Calculate the absolute difference between frames
+            frame_diff = cv2.absdiff(frame, prev_frame)
+
+            # Amplify the motion by scaling the difference
+            amplified_frame = frame_diff * motion_scale
+
+            # Add the amplified motion to the original frame
+            result_frame = cv2.add(frame, amplified_frame)
+
+            out.write(result_frame)
+        
+        prev_frame = frame
+
+    cap.release()
+    out.release()
+
+# Example usage
+input_video_path = 'Video Mag.mp4'  # Replace with your video file
+output_video_path = 'rete.avi'
+motion_scale = 10  # Adjust the motion scale factor as needed
+
+amplify_motion(input_video_path, output_video_path, motion_scale)
