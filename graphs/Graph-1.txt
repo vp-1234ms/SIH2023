@@ -1,0 +1,48 @@
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+# Specify the path to the video in your Google Drive
+video_path ="Video Mag.mp4"
+cap = cv2.VideoCapture(video_path)  # Replace 'input_video.mp4' with your video file
+
+# Initialize the background subtractor
+bg_subtractor = cv2.createBackgroundSubtractorMOG2()
+
+# Lists to store amplitude of motion over time
+time_frames = []
+motion_amplitudes = []
+
+frame_number = 0  # Initialize frame number
+
+
+
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Apply background subtraction to detect moving objects
+    fg_mask = bg_subtractor.apply(frame)
+
+    # Calculate the amplitude of motion
+    motion_amplitude = np.sum(fg_mask)  # You can use different measures as needed
+
+    # Append frame number and motion amplitude to lists
+    frame_number += 1
+    time_frames.append(frame_number)
+    motion_amplitudes.append(motion_amplitude)
+
+
+cap.release()
+
+# Create a plot to visualize amplitude of motion over time
+plt.figure(figsize=(10, 5))
+plt.plot(time_frames, motion_amplitudes, label='Motion Amplitude')
+plt.xlabel('Frame Number')
+plt.ylabel('Amplitude of Motion')
+plt.title('Motion Amplitude Over Time')
+plt.legend()
+plt.grid()
+plt.show()
+

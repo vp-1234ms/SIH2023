@@ -1,0 +1,207 @@
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.colors import LogNorm
+from scipy.spatial import distance
+from collections import deque
+
+# Initialize the video
+video_path = "Video Mag.mp4"
+cap = cv2.VideoCapture(video_path)
+
+feature_params = dict(maxCorners=100, qualityLevel=0.1, minDistance=10, blockSize=10)
+lk_params = dict(winSize=(10, 10), maxLevel=1, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+# Create some random colors for visualization
+color = np.random.randint(0, 255, (100, 3))
+
+# Take the first frame and find corners in it
+ret, old_frame = cap.read()
+old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
+p0 = cv2.goodFeaturesToTrack(old_gray, mask=None, **feature_params)
+
+# Create a mask image for drawing purposes
+mask = np.zeros_like(old_frame)
+
+# Initialize variables for motion trajectory plot
+x_coords, y_coords = [], []
+
+# Initialize variables for velocity plot
+velocities = []
+frame_number = 0
+time_between_frames = 1  # Set this value according to your video's frame rate
+
+# Initialize variables for acceleration plot
+accelerations = []
+
+# Initialize variables for optical flow vector field
+frame_width = int(cap.get(3))
+frame_height = int(cap.get(4))
+skip_frames = 10
+frames = deque(maxlen=skip_frames)
+
+# Initialize variables for displacement histogram
+displacements = []
+
+# Initialize variables for density map
+density_map = np.zeros((frame_height, frame_width))
+
+# Initialize variables for trajectory heatmap
+heatmap = np.zeros((frame_height, frame_width))
+
+# Initialize variables for path length histogram
+path_lengths = []
+
+# Initialize variables for polar plot
+angles = []
+
+
+# Define video writer parameters
+frame_height, frame_width, _ = old_frame.shape
+fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Adjust the codec if needed
+output_video = cv2.VideoWriter('vaibh.avi', fourcc, 30.0, (frame_width, frame_height))
+
+
+while cap.isOpened():
+    ret, frame = cap.read()
+
+    if not ret:
+        print("No frames grabbed or end of video!")
+        break
+
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
+
+    good_new = p1[st == 1]
+    good_old = p0[st == 1]
+
+    for i, (new, old) in enumerate(zip(good_new, good_old)):
+        a, b = new.ravel()
+        a, b = int(a), int(b)  # Convert to integers
+        c, d = old.ravel()
+        c, d = int(c), int(d)  # Convert to integers
+
+        mask = cv2.line(mask, (a, b), (c, d), color[i].tolist(), 2)
+        frame = cv2.circle(frame, (a, b), 5, color[i].tolist(), -1)
+
+        # Append coordinates for motion trajectory
+        x_coords.append(a)
+        y_coords.append(b)
+
+        # Calculate displacement between new and old positions
+        displacement = np.sqrt((a - c) ** 2 + (b - d) ** 2)
+        displacements.append(displacement)
+
+        # Calculate velocity
+        velocity = displacement / time_between_frames
+        velocities.append(velocity)
+
+        # Calculate acceleration (from velocity)
+        if frame_number > 1:
+            prev_velocity = velocities[-2]
+            acceleration = (velocity - prev_velocity) / time_between_frames
+            accelerations.append(acceleration)
+
+        # Calculate optical flow vectors and add them to the frames
+        if frame_number % skip_frames == 0:
+            flow = cv2.calcOpticalFlowFarneback(old_gray, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            frames.append(flow)
+
+        # Update the density map
+        density_map[b, a] += 1
+
+        # Update the trajectory heatmap
+        heatmap[b, a] += 1
+
+        # Update the path length
+        path_lengths.append(np.sum(displacements))
+
+        # Calculate the angle of motion
+        if a - c == 0:
+            angle = np.pi / 2
+        else:
+            angle = np.arctan2(b - d, a - c)
+        angles.append(angle)
+
+    img = cv2.add(frame, mask)
+    # cv2_imshow(img)
+    output_video.write(img)
+    
+
+    # Update the previous frame and previous points
+    old_gray = frame_gray.copy()
+    p0 = good_new.reshape(-1, 1, 2)
+
+    frame_number += 1
+
+cap.release()
+output_video.release()
+# cv2.destroyAllWindows()
+
+# Plot the motion trajectory
+plt.figure(figsize=(8, 6))
+plt.plot(x_coords, y_coords)
+plt.xlabel('X-coordinate')
+plt.ylabel('Y-coordinate')
+plt.title('Object Motion Trajectory')
+plt.show()
+
+# Plot the velocity
+plt.figure(figsize=(8, 6))
+plt.plot(range(len(velocities)), velocities)
+plt.xlabel('Frame Number')
+plt.ylabel('Velocity')
+plt.title('Object Velocity Over Time')
+plt.show()
+
+
+# Plot the acceleration
+plt.figure(figsize=(8, 6))
+plt.plot(range(1, len(accelerations) + 1), accelerations)
+plt.xlabel('Frame Number')
+plt.ylabel('Acceleration')
+plt.title('Object Acceleration Over Time')
+plt.show()
+
+
+# Create an optical flow vector field plot
+vector_field = np.zeros((frame_height, frame_width, 2))
+for flow in frames:
+    vector_field += flow
+plt.figure(figsize=(8, 6))
+plt.imshow(frame_gray, cmap='gray')
+plt.quiver(range(0, frame_width, skip_frames), range(0, frame_height, skip_frames),
+           vector_field[::skip_frames, ::skip_frames, 0], vector_field[::skip_frames, ::skip_frames, 1], color='red')
+plt.title('Optical Flow Vector Field')
+plt.show()
+
+# Plot the displacement histogram
+plt.figure(figsize=(8, 6))
+plt.hist(displacements, bins=50, density=True, alpha=0.6, color='g')
+plt.xlabel('Displacement')
+plt.ylabel('Density')
+plt.title('Displacement Histogram')
+plt.show()
+
+# Plot the density map
+plt.figure(figsize=(8, 6))
+plt.imshow(density_map, cmap='jet', norm=LogNorm())
+plt.colorbar()
+plt.title('Density Map')
+plt.show()
+
+# Plot the trajectory heatmap
+plt.figure(figsize=(8, 6))
+plt.imshow(heatmap, cmap='jet')
+plt.colorbar()
+plt.title('Trajectory Heatmap')
+plt.show()
+
+# Plot the path length histogram
+plt.figure(figsize=(8, 6))
+plt.hist(path_lengths, bins=50, density=True, alpha=0.6, color='b')
+plt.xlabel('Path Length')
+plt.ylabel('Frequency')
+plt.title('Path Length Histogram')
+plt.show()

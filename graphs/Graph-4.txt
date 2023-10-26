@@ -1,0 +1,114 @@
+import cv2
+import numpy as np
+from scipy.signal import find_peaks
+from scipy.fft import fft
+import matplotlib.pyplot as plt
+
+# Function to perform vibration analysis on an amplified video
+def vibration_analysis(input_video_path, output_video_path, data_output_path, frame_rate=30):
+    cap = cv2.VideoCapture(input_video_path)
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        return
+
+    frame_width = int(cap.get(3))
+    frame_height = int(cap.get(4))
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    # Initialize data storage
+    vibration_amplitudes = []
+    mode_shapes = []
+    time_waveforms = []
+
+    out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, (frame_width, frame_height), isColor=True)
+
+    prev_frame = None
+    frame_number = 0
+    common_frame_size = None  # Initialize common frame size
+
+    while cap is not None:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if prev_frame is not None:
+            # Calculate the absolute difference between frames
+            frame_diff = cv2.absdiff(frame, prev_frame)
+            # Amplify the motion by scaling the difference
+            amplified_frame = frame_diff
+
+            # Extract data for vibration analysis
+            gray_frame = cv2.cvtColor(amplified_frame, cv2.COLOR_BGR2GRAY)
+            
+            if common_frame_size is None:
+                common_frame_size = (gray_frame.shape[1], gray_frame.shape[0])  # Initialize common frame size
+            
+            gray_frame = cv2.resize(gray_frame, common_frame_size)
+            
+            fft_result = fft(gray_frame)
+            amplitude_spectrum = np.abs(fft_result)
+            
+            time_waveforms.append(gray_frame)
+            vibration_amplitudes.append(np.max(amplitude_spectrum))
+            mode_shapes.append(amplified_frame)
+
+            # Write the frame to the output video
+            out.write(amplified_frame)
+
+        prev_frame = frame
+        frame_number += 1
+
+    cap.release()
+    out.release()
+
+    # Calculate the total duration of the video in seconds
+    total_duration = frame_count / frame_rate
+
+    # Ensure that time_waveforms have the same length as vibration_amplitudes
+    resampled_waveforms = []
+    for waveform in time_waveforms:
+        # Flatten the waveform if it's not already a 1D array
+        if waveform.ndim > 1:
+            waveform = waveform.flatten()
+        # Linear interpolation to match the length
+        resampled_waveform = np.interp(np.linspace(0, total_duration, len(vibration_amplitudes)), np.linspace(0, total_duration, len(waveform)), waveform)
+        resampled_waveforms.append(resampled_waveform)
+
+    # Convert the resampled waveforms to a NumPy array
+    resampled_waveforms = np.array(resampled_waveforms)
+    # Calculate time points for the resampled waveforms
+    time_points = np.linspace(0, total_duration, len(vibration_amplitudes), endpoint=False)
+
+    vibration_amplitudes = np.array(vibration_amplitudes)
+    
+    # Perform FFT analysis to identify frequency components
+    fft_frequencies = np.fft.fftfreq(common_frame_size[0])
+    fft_frequencies = fft_frequencies[:len(fft_frequencies) // 2]
+    
+    plt.figure(figsize=(12, 6))
+    plt.subplot(2, 1, 1)
+    plt.plot(time_points, vibration_amplitudes)
+    plt.title('Vibration Amplitudes Over Time')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    
+    plt.subplot(2, 1, 2)
+    for i, time_waveform in enumerate(resampled_waveforms):
+        peaks, _ = find_peaks(time_waveform)
+        plt.plot(time_points, time_waveform, label=f'Frame {i + 1}')
+    plt.title('Time Waveforms of Amplified Frames')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    
+    plt.tight_layout()
+    plt.show()
+
+    # Save vibration analysis data for further analysis or reporting
+    np.savetxt(data_output_path, vibration_amplitudes, delimiter=',')
+
+# Example usage
+input_video_path = 'amplification/ORIGINSL_COLOUR.mp4' 
+data_output_path = 'vibration_analysis/vibration_data.csv'
+frame_rate = 30  # Adjust the frame rate of your video
+
+vibration_analysis(input_video_path, output_video_path, data_output_path, frame_rate)
