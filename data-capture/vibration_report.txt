@@ -1,0 +1,5 @@
+Vibration Analysis Report
+
+Maximum Vibration Amplitude: 20107.0
+Minimum Vibration Amplitude: 326.0
+Average Vibration Amplitude: 3048.4338028169013
