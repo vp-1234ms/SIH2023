@@ -1,4 +1,3 @@
-![image](https://github.com/vp-1234ms/SIH2023/assets/102847008/ee170e57-ceb3-4572-b119-01f2ab65c8b1)<p align="center">
   <a href="" rel="noopener"></a>
 </p>
 <h1 align="center">Development of motion amplification video techniques for vibration analysis - Smart India Hackathon 2023</h1>
