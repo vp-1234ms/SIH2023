@@ -23,4 +23,4 @@ Motion Amplification video (MAV) is a technique for visualizing and measuring vi
 - 
 
 ## Demonstration
-
+https://github.com/vp-1234ms/SIH2023/assets/102847008/ae5fca94-d9d8-4003-ac83-76b313294f65
