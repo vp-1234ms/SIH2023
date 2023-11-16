@@ -3,7 +3,6 @@
 </p>
 <h1 align="center">Development of motion amplification video techniques for vibration analysis - Smart India Hackathon 2023</h1>
 
-![emotion](https://github.com/vp-1234ms/Emotion-Analysis-Final/assets/102847008/87d94074-8cee-4feb-ad08-992ae57f61a3) <a name = "description"></a>
 
 # 📝 Description <a name = "description"></a>
 
@@ -17,14 +16,11 @@ Motion Amplification video (MAV) is a technique for visualizing and measuring vi
 - [Matplotlib,Seaborn,Statistics]-Data Visualization
 - [HTML,CSS,JS,Bootstrap]-Frontend Service
   
-![analysis](https://github.com/vp-1234ms/Emotion-Analysis-Final/assets/102847008/dfb4b7db-f013-493a-8d9d-85798f5f0b1a)
 
 ## 🎉 Built By <a name = "acknowledgments"></a>
-- Vaibhav Vilas Pawar
-- Atharva Gulkotwar
+- 
 ## 🎉 Mentor 
-- Dr.Shashank Mouli Satapathy Sir
+- 
 
 ## Demonstration
-https://github.com/vp-1234ms/Multi-Modal-Emotion-Detection-and-Analysis-System/assets/102847008/f8d071f2-2b42-45a7-9511-c14834567b8c
 
