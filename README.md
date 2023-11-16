@@ -16,6 +16,8 @@ Using Eulerian Video Magnification, amplify motion in each frame by scaling pixe
 Generation of data, mode shapes, FFT(Fast Fourier Transform) spectrum results, and time waveforms for vibrational analysis. Detailed reports including above data.
 Use of Temporal filters to enhance MAV video clarity and reduce noise.
 
+![mav2](https://github.com/vp-1234ms/SIH2023/assets/102847008/8685995d-a156-4e86-b75a-2ab273630e05)
+
 # 📝 Use Cases <a name = "use"></a>
 Structural Health Monitoring: Generated MAV (Motion Amplification Video) can be used to identify hidden structural defects, such as cracks or deformations, in  buildings and bridges, ensuring their safety and integrity.
 Machinery Condition Assessment: It helps in detecting structural defects, imbalances or misalignments in industrial equipment, preventing costly breakdowns and optimizing maintenance.
@@ -30,9 +32,6 @@ Use of Temporal Filters:  This filters reduces noise and generates clear motion 
 Detailed report on vibrational analysis: Report consist of FFT spectrum, time waveform and insightful statistical data collected from video frames. 
 Use of Lucas-Kanade method:  Generation of optical flow helps in detecting direction of vibrations.
 
-
-
-![mav2](https://github.com/vp-1234ms/SIH2023/assets/102847008/8685995d-a156-4e86-b75a-2ab273630e05)
 
 ## ⛏️ Built With <a name = "tech_stack"></a>
 - [Data Collection,Data Integration,Data Hadelling,Data Management,Data Processing]-Data Analysis
